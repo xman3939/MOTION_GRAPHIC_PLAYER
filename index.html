@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MOTION GRAPHIC PLAYER</title>
+  <style>
+    @font-face {
+      font-family: 'Space Grotesk';
+      src: url('SpaceGrotesk-Regular.ttf') format('truetype');
+      font-weight: 100 900;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      background: #0d0d0f;
+      color: #e0e0e0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: #111113;
+      border-bottom: 1px solid #1e1e22;
+      flex-shrink: 0;
+    }
+
+    .logo {
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #444;
+    }
+
+    .logo span { color: #e0e0e0; }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .auto-run-label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      color: #555;
+      cursor: pointer;
+      user-select: none;
+      padding-right: 4px;
+    }
+
+    .toggle-track {
+      width: 28px;
+      height: 16px;
+      background: #2a2a2e;
+      border-radius: 8px;
+      position: relative;
+      transition: background 0.2s;
+      border: 1px solid #333;
+    }
+
+    .toggle-track.on { background: #22c55e; border-color: #22c55e; }
+
+    .toggle-track::after {
+      content: '';
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: #fff;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: left 0.15s;
+    }
+
+    .toggle-track.on::after { left: 14px; }
+
+    button {
+      background: transparent;
+      border: 1px solid #2a2a2e;
+      color: #888;
+      padding: 6px 14px;
+      border-radius: 5px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      font-family: inherit;
+    }
+
+    button:hover { border-color: #555; color: #e0e0e0; }
+
+    .btn-run {
+      background: #fff;
+      border-color: #fff;
+      color: #000;
+      font-weight: 600;
+      padding: 6px 18px;
+    }
+
+    .btn-run:hover { background: #ddd; border-color: #ddd; color: #000; }
+
+    .workspace {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* === EDITOR === */
+
+    .editor-pane {
+      width: 42%;
+      min-width: 200px;
+      max-width: 80%;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .tabs {
+      display: flex;
+      background: #111113;
+      border-bottom: 1px solid #1e1e22;
+      flex-shrink: 0;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      color: #444;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+
+    .tab.active { color: #e0e0e0; border-bottom-color: #e0e0e0; }
+    .tab:hover:not(.active) { color: #888; }
+
+    .editor-area {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    textarea {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background: #0d0d0f;
+      color: #d0d0d0;
+      border: none;
+      outline: none;
+      resize: none;
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.65;
+      padding: 20px;
+      tab-size: 2;
+      caret-color: #fff;
+    }
+
+    textarea::placeholder { color: #2e2e34; }
+    textarea::selection { background: #264f78; }
+
+    /* === DIVIDER === */
+
+    .divider {
+      width: 5px;
+      background: #111113;
+      cursor: col-resize;
+      flex-shrink: 0;
+      border-left: 1px solid #1e1e22;
+      border-right: 1px solid #1e1e22;
+      transition: background 0.15s;
+    }
+
+    .divider:hover, .divider.dragging { background: #2a2a30; }
+
+    /* === PREVIEW === */
+
+    .preview-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background: #000;
+    }
+
+    .preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      background: #111113;
+      border-bottom: 1px solid #1e1e22;
+      flex-shrink: 0;
+    }
+
+    .preview-label {
+      font-size: 11px;
+      color: #333;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .preview-btns { display: flex; gap: 6px; }
+
+    .preview-btns button {
+      padding: 4px 11px;
+      font-size: 11px;
+    }
+
+    .preview-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+      background: #000;
+      transition: background 0.2s;
+    }
+
+    iframe {
+      border: none;
+      display: block;
+      flex-shrink: 0;
+    }
+
+    .device-btn {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 4px;
+      letter-spacing: 0.04em;
+    }
+
+    .device-btn.active {
+      background: #2a2a2e;
+      border-color: #3a3a3e;
+      color: #e0e0e0;
+    }
+
+    /* === PROJECTS BAR === */
+
+    .snippet-bar {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 16px;
+      background: #111113;
+      border-top: 1px solid #1e1e22;
+      overflow-x: auto;
+      flex-shrink: 0;
+    }
+
+    .snippet-bar::-webkit-scrollbar { height: 3px; }
+    .snippet-bar::-webkit-scrollbar-track { background: transparent; }
+    .snippet-bar::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+    .snippet-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #333;
+      white-space: nowrap;
+      padding-right: 2px;
+    }
+
+    .snippet-btn {
+      font-size: 11px;
+      padding: 4px 12px;
+      white-space: nowrap;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">MOTION GRAPHIC PLAYER</div>
+  <div class="controls">
+    <label class="auto-run-label" id="autoRunLabel">
+      <div class="toggle-track" id="toggleTrack"></div>
+      Auto-run
+    </label>
+    <button onclick="clearAll()">Clear</button>
+    <button class="btn-run" onclick="runCode()">Run &#9654;</button>
+  </div>
+</header>
+
+<div class="workspace">
+  <div class="editor-pane" id="editorPane">
+    <div class="tabs" id="tabBar">
+      <div class="tab active" data-tab="html">HTML</div>
+      <div class="tab" data-tab="css">CSS</div>
+      <div class="tab" data-tab="js">JS</div>
+    </div>
+    <div class="editor-area">
+      <textarea id="htmlEditor" spellcheck="false" placeholder="&lt;!-- HTML --&gt;" oninput="onEdit()"></textarea>
+      <textarea id="cssEditor" spellcheck="false" placeholder="/* CSS &amp; animations */" style="display:none" oninput="onEdit()"></textarea>
+      <textarea id="jsEditor" spellcheck="false" placeholder="// JavaScript" style="display:none" oninput="onEdit()"></textarea>
+    </div>
+  </div>
+
+  <div class="divider" id="divider"></div>
+
+  <div class="preview-pane">
+    <div class="preview-header">
+      <span class="preview-label">Preview</span>
+      <div class="preview-btns">
+        <button class="device-btn active" id="dev-mobile"   onclick="setDevice('mobile')">Mobile</button>
+        <button class="device-btn"        id="dev-tablet"   onclick="setDevice('tablet')">Tablet</button>
+        <button class="device-btn"        id="dev-desktop"  onclick="setDevice('desktop')">Desktop</button>
+        <button onclick="runCode()">&#8635; Reload</button>
+        <button onclick="goFullscreen()">&#10562; Full</button>
+      </div>
+    </div>
+    <div class="preview-wrap" id="previewWrap">
+      <iframe id="preview" sandbox="allow-scripts allow-same-origin"></iframe>
+    </div>
+  </div>
+</div>
+
+<div class="snippet-bar">
+  <span class="snippet-label">Projects</span>
+  <button class="snippet-btn" onclick="loadSnippet('tj')">TJ</button>
+  <button class="snippet-btn" onclick="loadSnippet('xk')">XK Loader</button>
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+
+  let activeTab = 'html';
+  let autoRun = false;
+  let autoRunTimer = null;
+
+  const editors = {
+    html: document.getElementById('htmlEditor'),
+    css:  document.getElementById('cssEditor'),
+    js:   document.getElementById('jsEditor'),
+  };
+
+  // ── Tabs ───────────────────────────────────────────────────────────────────
+
+  document.getElementById('tabBar').addEventListener('click', function(e) {
+    var tab = e.target.dataset.tab;
+    if (!tab || tab === activeTab) return;
+    editors[activeTab].style.display = 'none';
+    document.querySelectorAll('.tab').forEach(function(t) {
+      t.classList.toggle('active', t.dataset.tab === tab);
+    });
+    activeTab = tab;
+    editors[tab].style.display = 'block';
+    editors[tab].focus();
+  });
+
+  // ── Run ────────────────────────────────────────────────────────────────────
+
+  function runCode() {
+    var base = window.location.href.replace(/[^\/]+$/, '');
+    var doc = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+      + '<base href="' + base + '">'
+      + '<style>'
+      + '* { box-sizing: border-box; margin: 0; padding: 0; }'
+      + 'body { width: 100vw; height: 100vh; overflow: hidden; background: #000; }'
+      + editors.css.value
+      + '<\/style><\/head><body>'
+      + editors.html.value
+      + '<script>try {'
+      + editors.js.value
+      + '} catch(e) { console.error(e); }<\/script><\/body><\/html>';
+    document.getElementById('preview').srcdoc = doc;
+  }
+
+  function onEdit() {
+    if (!autoRun) return;
+    clearTimeout(autoRunTimer);
+    autoRunTimer = setTimeout(runCode, 700);
+  }
+
+  // ── Auto-run toggle ────────────────────────────────────────────────────────
+
+  document.getElementById('autoRunLabel').addEventListener('click', function() {
+    autoRun = !autoRun;
+    document.getElementById('toggleTrack').classList.toggle('on', autoRun);
+  });
+
+  // ── Clear ──────────────────────────────────────────────────────────────────
+
+  function clearAll() {
+    if (!confirm('Clear all editors?')) return;
+    Object.values(editors).forEach(function(e) { e.value = ''; });
+    document.getElementById('preview').srcdoc = '';
+  }
+
+  // ── Fullscreen ─────────────────────────────────────────────────────────────
+
+  function goFullscreen() {
+    document.getElementById('preview').requestFullscreen && document.getElementById('preview').requestFullscreen();
+  }
+
+  // ── Device preview ────────────────────────────────────────────────────────
+
+  var devices = {
+    mobile:  { w: 390,  h: 844,  radius: '44px' },
+    tablet:  { w: 768,  h: 1024, radius: '20px' },
+    desktop: null
+  };
+  var currentDevice = 'mobile';
+
+  function setDevice(name) {
+    currentDevice = name;
+    document.querySelectorAll('.device-btn').forEach(function(b) {
+      b.classList.toggle('active', b.id === 'dev-' + name);
+    });
+    var iframe = document.getElementById('preview');
+    var wrap   = document.getElementById('previewWrap');
+    var d = devices[name];
+    if (d) {
+      iframe.style.width        = d.w + 'px';
+      iframe.style.height       = d.h + 'px';
+      iframe.style.borderRadius = d.radius;
+      iframe.style.boxShadow    = '0 0 0 9px #1c1c22, 0 0 0 15px #28282f';
+      wrap.style.background     = '#111115';
+    } else {
+      iframe.style.width        = '100%';
+      iframe.style.height       = '100%';
+      iframe.style.borderRadius = '0';
+      iframe.style.boxShadow    = 'none';
+      iframe.style.zoom         = '1';
+      wrap.style.background     = '#000';
+    }
+    scaleDevice();
+    runCode();
+  }
+
+  function scaleDevice() {
+    var d = devices[currentDevice];
+    if (!d) return;
+    var wrap   = document.getElementById('previewWrap');
+    var iframe = document.getElementById('preview');
+    var pad    = 40;
+    var scale  = Math.min(1, (wrap.clientWidth - pad) / d.w, (wrap.clientHeight - pad) / d.h);
+    iframe.style.zoom = scale;
+  }
+
+  window.addEventListener('resize', function() {
+    if (currentDevice !== 'desktop') scaleDevice();
+  });
+
+  // ── Resizable divider ──────────────────────────────────────────────────────
+
+  var divider    = document.getElementById('divider');
+  var editorPane = document.getElementById('editorPane');
+  var dragging   = false;
+
+  divider.addEventListener('mousedown', function() {
+    dragging = true;
+    divider.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  window.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    var workspace = document.querySelector('.workspace');
+    var pct = Math.min(80, Math.max(20, (e.clientX / workspace.offsetWidth) * 100));
+    editorPane.style.width = pct + '%';
+  });
+
+  window.addEventListener('mouseup', function() {
+    if (!dragging) return;
+    dragging = false;
+    divider.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+
+  // ── Tab key + Ctrl+Enter in textarea ──────────────────────────────────────
+
+  document.querySelectorAll('textarea').forEach(function(ta) {
+    ta.addEventListener('keydown', function(e) {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        var s = ta.selectionStart;
+        ta.value = ta.value.slice(0, s) + '  ' + ta.value.slice(ta.selectionEnd);
+        ta.selectionStart = ta.selectionEnd = s + 2;
+      }
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        runCode();
+      }
+    });
+  });
+
+  // ── Projects ───────────────────────────────────────────────────────────────
+
+  var TJ_HTML = '<canvas id="bg"></canvas>\n'
+    + '<div class="scene">\n'
+    + '  <div class="layer" id="logo">\n'
+    + '    <div class="initials">MA</div>\n'
+    + '    <div class="tagline">space for art</div>\n'
+    + '  </div>\n'
+    + '  <div class="layer" id="welcome">\n'
+    + '    <p class="wline">Welcome to MA,</p>\n'
+    + '    <p class="wline sub">a place where art &amp; design live.</p>\n'
+    + '  </div>\n'
+    + '  <div class="layer" id="cta">\n'
+    + '    <p class="question">Would you like to join us<br>as a Maker or Appreciator?</p>\n'
+    + '    <div class="actions">\n'
+    + '      <button class="btn-maker">Maker</button>\n'
+    + '      <button class="btn-appr">Appreciator</button>\n'
+    + '    </div>\n'
+    + '  </div>\n'
+    + '</div>';
+
+  var TJ_CSS = '@font-face {\n'
+    + '  font-family: "Space Grotesk";\n'
+    + '  src: url("SpaceGrotesk-Regular.ttf") format("truetype");\n'
+    + '}\n'
+    + 'body {\n'
+    + '  background: #0d1a0d;\n'
+    + '  display: flex;\n'
+    + '  align-items: center;\n'
+    + '  justify-content: center;\n'
+    + '  font-family: "Space Grotesk", system-ui, sans-serif;\n'
+    + '}\n'
+    + '#bg {\n'
+    + '  position: fixed;\n'
+    + '  top: 0; left: 0;\n'
+    + '  width: 100%; height: 100%;\n'
+    + '  z-index: 0;\n'
+    + '}\n'
+    + '.scene {\n'
+    + '  position: relative;\n'
+    + '  width: 375px;\n'
+    + '  height: 680px;\n'
+    + '  z-index: 1;\n'
+    + '}\n'
+    + '.layer {\n'
+    + '  position: absolute;\n'
+    + '  inset: 0;\n'
+    + '  display: flex;\n'
+    + '  flex-direction: column;\n'
+    + '  align-items: center;\n'
+    + '  justify-content: center;\n'
+    + '  opacity: 0;\n'
+    + '  transition: opacity 0.9s ease;\n'
+    + '}\n'
+    + '.layer.show { opacity: 1; }\n'
+    + '.initials {\n'
+    + '  font-size: 8rem;\n'
+    + '  font-weight: 700;\n'
+    + '  color: #7c3aed;\n'
+    + '  letter-spacing: -0.03em;\n'
+    + '  line-height: 1;\n'
+    + '}\n'
+    + '.tagline {\n'
+    + '  font-size: 2rem;\n'
+    + '  font-weight: 500;\n'
+    + '  letter-spacing: 0.1em;\n'
+    + '  color: rgba(124,58,237,0.7);\n'
+    + '  margin-top: -0.8rem;\n'
+    + '}\n'
+    + '.wline {\n'
+    + '  font-size: 1.2rem;\n'
+    + '  color: #a78bfa;\n'
+    + '  text-align: center;\n'
+    + '  line-height: 1.75;\n'
+    + '}\n'
+    + '.wline.sub {\n'
+    + '  font-size: 1.2rem;\n'
+    + '  color: rgba(167,139,250,0.6);\n'
+    + '  margin-top: 0;\n'
+    + '}\n'
+    + '.question {\n'
+    + '  font-size: 1.2rem;\n'
+    + '  color: #a78bfa;\n'
+    + '  text-align: center;\n'
+    + '  line-height: 1.75;\n'
+    + '  margin-bottom: 2rem;\n'
+    + '}\n'
+    + '.actions { display: flex; gap: 12px; }\n'
+    + '.btn-maker {\n'
+    + '  background: #7c3aed;\n'
+    + '  border: none;\n'
+    + '  color: #fff;\n'
+    + '  padding: 10px 28px;\n'
+    + '  border-radius: 6px;\n'
+    + '  font-size: 0.85rem;\n'
+    + '  font-family: inherit;\n'
+    + '  font-weight: 600;\n'
+    + '  cursor: pointer;\n'
+    + '}\n'
+    + '.btn-appr {\n'
+    + '  background: transparent;\n'
+    + '  border: 1px solid rgba(124,58,237,0.5);\n'
+    + '  color: rgba(167,139,250,0.9);\n'
+    + '  padding: 10px 28px;\n'
+    + '  border-radius: 6px;\n'
+    + '  font-size: 0.85rem;\n'
+    + '  font-family: inherit;\n'
+    + '  cursor: pointer;\n'
+    + '}';
+
+  // Each dot gets its own random direction angle that slowly drifts each frame.
+  // No shared flow field — no snaking, just aimless individual wandering.
+  var TJ_JS = 'var W = window.innerWidth, H = window.innerHeight;\n'
+    + 'var canvas = document.getElementById("bg");\n'
+    + 'var ctx = canvas.getContext("2d");\n'
+    + 'canvas.width = W; canvas.height = H;\n'
+    + '\n'
+    + 'var SP = 32, MAX_R = 23, MIN_R = 2;\n'
+    + 'var COLS = Math.ceil(W / SP);\n'
+    + 'var ROWS = Math.ceil(H / SP);\n'
+    + 'var PAD  = 3;\n'
+    + '\n'
+    + 'var dots = [];\n'
+    + 'for (var r = -PAD; r <= ROWS + PAD; r++) {\n'
+    + '  for (var c = -PAD; c <= COLS + PAD; c++) {\n'
+    + '    dots.push({\n'
+    + '      x: c * SP,\n'
+    + '      y: r * SP,\n'
+    + '      angle: Math.random() * Math.PI * 2,\n'
+    + '      speed: 0.04 + Math.random() * 0.07\n'
+    + '    });\n'
+    + '  }\n'
+    + '}\n'
+    + '\n'
+    + 'function ease(t) { return t < 0.5 ? 2*t*t : -1 + (4-2*t)*t; }\n'
+    + '\n'
+    + 'var start = null;\n'
+    + '\n'
+    + 'function frame(now) {\n'
+    + '  if (!start) start = now;\n'
+    + '  var t = (now - start) / 1000;\n'
+    + '\n'
+    + '  ctx.fillStyle = "#0d1a0d";\n'
+    + '  ctx.fillRect(0, 0, W, H);\n'
+    + '\n'
+    + '  var radius;\n'
+    + '  if (t < 0.8) {\n'
+    + '    radius = MAX_R;\n'
+    + '  } else if (t < 2.6) {\n'
+    + '    radius = MAX_R + (MIN_R - MAX_R) * ease(Math.min(1, (t - 0.8) / 1.8));\n'
+    + '  } else {\n'
+    + '    radius = MIN_R;\n'
+    + '    var wt = t - 2.6;\n'
+    + '    var sc = wt / 6.0; if (sc > 1) sc = 1; sc = sc * sc;\n'
+    + '    for (var i = 0; i < dots.length; i++) {\n'
+    + '      var d = dots[i];\n'
+    + '      d.angle += (Math.random() - 0.5) * 0.03 * sc;\n'
+    + '      d.x += Math.cos(d.angle) * d.speed * sc;\n'
+    + '      d.y += Math.sin(d.angle) * d.speed * sc;\n'
+    + '      var mg = 160;\n'
+    + '      if (d.x < -mg) d.x += W + mg * 2;\n'
+    + '      if (d.x > W + mg) d.x -= W + mg * 2;\n'
+    + '      if (d.y < -mg) d.y += H + mg * 2;\n'
+    + '      if (d.y > H + mg) d.y -= H + mg * 2;\n'
+    + '    }\n'
+    + '  }\n'
+    + '\n'
+    + '  ctx.fillStyle = "#7c3aed";\n'
+    + '  for (var j = 0; j < dots.length; j++) {\n'
+    + '    ctx.beginPath();\n'
+    + '    ctx.arc(dots[j].x, dots[j].y, radius, 0, Math.PI * 2);\n'
+    + '    ctx.fill();\n'
+    + '  }\n'
+    + '\n'
+    + '  requestAnimationFrame(frame);\n'
+    + '}\n'
+    + 'requestAnimationFrame(frame);\n'
+    + '\n'
+    + 'var logo    = document.getElementById("logo");\n'
+    + 'var welcome = document.getElementById("welcome");\n'
+    + 'var cta     = document.getElementById("cta");\n'
+    + '\n'
+    + 'setTimeout(function() { logo.classList.add("show"); },          1200);\n'
+    + 'setTimeout(function() { logo.classList.remove("show"); },       4000);\n'
+    + 'setTimeout(function() { welcome.classList.add("show"); },       4300);\n'
+    + 'setTimeout(function() { welcome.classList.remove("show"); },    6400);\n'
+    + 'setTimeout(function() { cta.classList.add("show"); },           6900);\n';
+
+  // ── XK Loader snippet ─────────────────────────────────────────────────────
+  // Logo: inline SVG wordmark (XK1W.svg not available locally, approximated with Space Grotesk)
+  // CSS: matches production loader + mobile home screen aesthetic
+
+  var XK_HTML = '<div id="loader" class="loader">\n'
+    + '  <div class="loader-inner">\n'
+    + '    <img class="loader-logo" id="loaderLogo" src="XK1W.svg" alt="XK">\n'
+    + '    <div class="loader-text" id="loaderText">LOADING<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div>\n'
+    + '  </div>\n'
+    + '</div>\n'
+    + '\n'
+    + '<button class="mobile-menu-toggle" id="menuToggle" type="button">\n'
+    + '  <svg width="24" height="14" viewBox="0 0 24 14" fill="none" xmlns="http://www.w3.org/2000/svg">\n'
+    + '    <rect width="24" height="1.5" fill="white"/>\n'
+    + '    <rect y="6.25" width="24" height="1.5" fill="white"/>\n'
+    + '    <rect y="12.5" width="24" height="1.5" fill="white"/>\n'
+    + '  </svg>\n'
+    + '</button>\n'
+    + '\n'
+    + '<div id="mobileMenu" class="mobile-menu">\n'
+    + '  <div class="mobile-menu-inner">\n'
+    + '    <div class="mobile-menu-links">\n'
+    + '      <button class="mobile-menu-link">HOME</button>\n'
+    + '      <button class="mobile-menu-link">WORK</button>\n'
+    + '      <button class="mobile-menu-link">ABOUT</button>\n'
+    + '      <button class="mobile-menu-link">CONTACT</button>\n'
+    + '    </div>\n'
+    + '    <button class="mobile-menu-close" id="menuClose">[X]</button>\n'
+    + '  </div>\n'
+    + '</div>\n'
+    + '\n'
+    + '<div id="menuBlur" class="menu-blur-overlay"></div>\n'
+    + '\n'
+    + '<div id="app">\n'
+    + '  <div class="mobile-bg-slideshow">\n'
+    + '    <div class="mobile-bg-overlay"></div>\n'
+    + '    <div class="mobile-bg-slide slide-1 is-active"></div>\n'
+    + '    <div class="mobile-bg-slide slide-2"></div>\n'
+    + '    <div class="mobile-bg-slide slide-3"></div>\n'
+    + '  </div>\n'
+    + '  <div class="slide-caption" id="slideCaption">CHICAGO&nbsp;&nbsp;IL</div>\n'
+    + '  <img class="home-logo" src="XK1W.svg" alt="XK">\n'
+    + '</div>';
+
+  var XK_CSS = '@font-face {\n'
+    + '  font-family: "Space Grotesk";\n'
+    + '  src: url("SpaceGrotesk-Regular.ttf") format("truetype");\n'
+    + '  font-weight: 400;\n'
+    + '}\n'
+    + '\n'
+    + '* { box-sizing: border-box; margin: 0; padding: 0; }\n'
+    + '\n'
+    + 'html, body {\n'
+    + '  width: 100%; height: 100%;\n'
+    + '  background: #1a1a1a;\n'
+    + '  font-family: "Space Grotesk", Helvetica, Arial, sans-serif;\n'
+    + '  overflow: hidden;\n'
+    + '}\n'
+    + '\n'
+    + '.loader {\n'
+    + '  position: fixed; inset: 0; z-index: 20;\n'
+    + '  background: #1a1a1a;\n'
+    + '  display: flex; align-items: center; justify-content: center;\n'
+    + '}\n'
+    + '\n'
+    + '.loader-inner {\n'
+    + '  display: flex; flex-direction: column;\n'
+    + '  align-items: center; justify-content: center;\n'
+    + '}\n'
+    + '\n'
+    + '.loader-logo {\n'
+    + '  width: min(400px, 85vw);\n'
+    + '  height: auto; display: block;\n'
+    + '  transform-origin: center bottom;\n'
+    + '}\n'
+    + '\n'
+    + '.loader-logo.is-squishing {\n'
+    + '  animation: loaderSquish 380ms cubic-bezier(0.4, 0, 1, 1) forwards;\n'
+    + '}\n'
+    + '\n'
+    + '@keyframes loaderSquish {\n'
+    + '  0%   { transform: scaleY(1);    opacity: 1; }\n'
+    + '  75%  { transform: scaleY(0.12); opacity: 1; }\n'
+    + '  100% { transform: scaleY(0);    opacity: 0; }\n'
+    + '}\n'
+    + '\n'
+    + '.loader-text {\n'
+    + '  margin-top: 24px;\n'
+    + '  color: #fff;\n'
+    + '  font-size: 13px; line-height: 1;\n'
+    + '  letter-spacing: 0.12em; font-weight: 400;\n'
+    + '  transition: opacity 300ms ease, transform 300ms ease;\n'
+    + '}\n'
+    + '\n'
+    + '.loader-text.is-hiding { opacity: 0; transform: translateY(10px); }\n'
+    + '\n'
+    + '.loading-dots span { opacity: 0; animation: loadingDot 1.2s infinite; }\n'
+    + '.loading-dots span:nth-child(1) { animation-delay: 0s; }\n'
+    + '.loading-dots span:nth-child(2) { animation-delay: 0.18s; }\n'
+    + '.loading-dots span:nth-child(3) { animation-delay: 0.36s; }\n'
+    + '\n'
+    + '@keyframes loadingDot {\n'
+    + '  0%, 20%  { opacity: 0; }\n'
+    + '  35%, 75% { opacity: 1; }\n'
+    + '  100%     { opacity: 0; }\n'
+    + '}\n'
+    + '\n'
+    + '.mobile-menu-toggle {\n'
+    + '  position: fixed; top: 18px; right: 14px; z-index: 10;\n'
+    + '  background: transparent; border: 0; padding: 6px;\n'
+    + '  cursor: pointer; opacity: 0; transition: opacity 400ms ease;\n'
+    + '}\n'
+    + '.mobile-menu-toggle.is-visible { opacity: 1; }\n'
+    + '\n'
+    + '.mobile-menu {\n'
+    + '  position: fixed; top: 0; left: 0; right: 0; height: 40vh;\n'
+    + '  background: #1a1a1a; z-index: 15;\n'
+    + '  transform: translateY(-100%);\n'
+    + '  transition: transform 380ms cubic-bezier(0.4, 0, 0.2, 1);\n'
+    + '}\n'
+    + '.mobile-menu.is-open { transform: translateY(0); }\n'
+    + '\n'
+    + '.mobile-menu-inner {\n'
+    + '  display: flex; flex-direction: row;\n'
+    + '  justify-content: space-between; align-items: flex-start;\n'
+    + '  padding: 32px 20px 0 20px; height: 100%;\n'
+    + '}\n'
+    + '\n'
+    + '.mobile-menu-links { display: flex; flex-direction: column; align-items: flex-start; gap: 26px; }\n'
+    + '\n'
+    + '.mobile-menu-link {\n'
+    + '  background: transparent; border: 0; padding: 0;\n'
+    + '  color: #fff;\n'
+    + '  font-family: "Space Grotesk", Helvetica, Arial, sans-serif;\n'
+    + '  font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;\n'
+    + '  cursor: pointer; opacity: 0; transition: color 300ms ease;\n'
+    + '}\n'
+    + '.mobile-menu-link.menu-link-animate {\n'
+    + '  opacity: 1; transition: color 300ms ease, opacity 320ms ease;\n'
+    + '}\n'
+    + '.mobile-menu-link:hover { color: #8f8f8f; }\n'
+    + '\n'
+    + '.mobile-menu-close {\n'
+    + '  background: transparent; border: 0; padding: 0;\n'
+    + '  color: #fff;\n'
+    + '  font-family: "Space Grotesk", Helvetica, Arial, sans-serif;\n'
+    + '  font-size: 13px; letter-spacing: 0.12em;\n'
+    + '  cursor: pointer; transition: color 300ms ease;\n'
+    + '}\n'
+    + '.mobile-menu-close:hover { color: #8f8f8f; }\n'
+    + '\n'
+    + '.menu-blur-overlay {\n'
+    + '  position: fixed; inset: 0; z-index: 14;\n'
+    + '  backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);\n'
+    + '  pointer-events: none; opacity: 0; transition: opacity 380ms ease;\n'
+    + '}\n'
+    + '.menu-blur-overlay.is-active { opacity: 1; pointer-events: auto; }\n'
+    + '\n'
+    + '#app {\n'
+    + '  position: fixed; inset: 0; z-index: 2;\n'
+    + '  opacity: 0; transition: opacity 600ms ease;\n'
+    + '}\n'
+    + '#app.is-visible { opacity: 1; }\n'
+    + '\n'
+    + '.mobile-bg-slideshow { position: absolute; inset: 0; overflow: hidden; }\n'
+    + '\n'
+    + '.mobile-bg-overlay {\n'
+    + '  position: absolute; inset: 0;\n'
+    + '  background: rgba(0,0,0,0.28); z-index: 3; pointer-events: none;\n'
+    + '}\n'
+    + '\n'
+    + '.mobile-bg-slide {\n'
+    + '  position: absolute; inset: 0; opacity: 0;\n'
+    + '  transition: opacity 700ms ease-in-out; z-index: 0;\n'
+    + '}\n'
+    + '.mobile-bg-slide.is-active { opacity: 1; }\n'
+    + '\n'
+    + '.slide-1 { background: linear-gradient(158deg,#161614 0%,#1e1e18 30%,#161410 55%,#0d0d0c 100%); }\n'
+    + '.slide-2 { background: linear-gradient(210deg,#0e1018 0%,#12161e 45%,#0a0b0d 100%); }\n'
+    + '.slide-3 { background: radial-gradient(ellipse at 30% 55%,#1c1c1a 0%,#111 55%,#080808 100%); }\n'
+    + '\n'
+    + '.home-logo {\n'
+    + '  position: absolute; left: 16px; bottom: 32px; z-index: 5;\n'
+    + '  width: calc(100vw - 32px); height: auto; display: block;\n'
+    + '}\n'
+    + '\n'
+    + '.slide-caption {\n'
+    + '  position: absolute; top: 50%; left: 16px; right: 16px;\n'
+    + '  transform: translateY(-50%); text-align: center; z-index: 5;\n'
+    + '  color: #fff;\n'
+    + '  font-family: "Space Grotesk", Helvetica, Arial, sans-serif;\n'
+    + '  font-size: 13px; line-height: 1; letter-spacing: 0.12em;\n'
+    + '  opacity: 0; transition: opacity 400ms ease;\n'
+    + '}\n'
+    + '.slide-caption.is-visible { opacity: 1; }';
+
+  var XK_JS = 'var loader = document.querySelector(".loader");\n'
+    + 'var loaderLogo = document.getElementById("loaderLogo");\n'
+    + 'var loaderText = document.getElementById("loaderText");\n'
+    + 'var app = document.getElementById("app");\n'
+    + 'var menuToggle = document.getElementById("menuToggle");\n'
+    + 'var mobileMenu = document.getElementById("mobileMenu");\n'
+    + 'var menuClose = document.getElementById("menuClose");\n'
+    + 'var menuBlur = document.getElementById("menuBlur");\n'
+    + 'var slideCaption = document.getElementById("slideCaption");\n'
+    + 'var slides = document.querySelectorAll(".mobile-bg-slide");\n'
+    + 'var curSlide = 0;\n'
+    + '\n'
+    + 'setTimeout(function() {\n'
+    + '  loaderText.classList.add("is-hiding");\n'
+    + '  loaderLogo.classList.add("is-squishing");\n'
+    + '}, 2400);\n'
+    + '\n'
+    + 'setTimeout(function() {\n'
+    + '  loader.style.display = "none";\n'
+    + '  app.classList.add("is-visible");\n'
+    + '  menuToggle.classList.add("is-visible");\n'
+    + '  setTimeout(function() { slideCaption.classList.add("is-visible"); }, 500);\n'
+    + '}, 2780);\n'
+    + '\n'
+    + 'setInterval(function() {\n'
+    + '  slides[curSlide].classList.remove("is-active");\n'
+    + '  curSlide = (curSlide + 1) % slides.length;\n'
+    + '  slides[curSlide].classList.add("is-active");\n'
+    + '}, 4200);\n'
+    + '\n'
+    + 'function openMenu() {\n'
+    + '  mobileMenu.classList.add("is-open");\n'
+    + '  menuBlur.classList.add("is-active");\n'
+    + '  document.querySelectorAll(".mobile-menu-link").forEach(function(l, i) {\n'
+    + '    setTimeout(function() { l.classList.add("menu-link-animate"); }, i * 60);\n'
+    + '  });\n'
+    + '}\n'
+    + '\n'
+    + 'function closeMenu() {\n'
+    + '  mobileMenu.classList.remove("is-open");\n'
+    + '  menuBlur.classList.remove("is-active");\n'
+    + '  document.querySelectorAll(".mobile-menu-link").forEach(function(l) {\n'
+    + '    l.classList.remove("menu-link-animate");\n'
+    + '  });\n'
+    + '}\n'
+    + '\n'
+    + 'menuToggle.addEventListener("click", openMenu);\n'
+    + 'menuClose.addEventListener("click", closeMenu);\n'
+    + 'menuBlur.addEventListener("click", closeMenu);\n';
+
+  var snippets = {
+    tj: { html: TJ_HTML, css: TJ_CSS, js: TJ_JS },
+    xk: { html: XK_HTML, css: XK_CSS, js: XK_JS }
+  };
+
+  function loadSnippet(name) {
+    var s = snippets[name];
+    if (!s) return;
+    editors.html.value = s.html;
+    editors.css.value  = s.css;
+    editors.js.value   = s.js;
+    runCode();
+    if (activeTab !== 'html') {
+      editors[activeTab].style.display = 'none';
+      document.querySelectorAll('.tab').forEach(function(t) {
+        t.classList.toggle('active', t.dataset.tab === 'html');
+      });
+      activeTab = 'html';
+      editors.html.style.display = 'block';
+    }
+  }
+
+  loadSnippet('tj');
+  requestAnimationFrame(function() { setDevice('mobile'); });
+</script>
+</body>
+</html>
