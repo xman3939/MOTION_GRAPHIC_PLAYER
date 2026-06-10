@@ -629,7 +629,7 @@
     + '      oy: r * SP,\n'
     + '      angle: Math.random() * Math.PI * 2,\n'
     + '      speed: 0.015 + Math.random() * 0.025,\n'
-    + '      wanderDelay: Math.random() < 0.25 ? Math.random() * 3 : 12 + Math.random() * 10,\n'
+    + '      wanderDelay: Math.random() < 0.25 ? 8.1 + Math.random() * 2 : 12 + Math.random() * 10,\n'
     + '      wanderDuration: 6 + Math.random() * 8,\n'
     + '      returned: false\n'
     + '    });\n'
@@ -656,7 +656,7 @@
     + '    radius = MIN_R;\n'
     + '  }\n'
     + '\n'
-    + '  if (t >= 2.6) {\n'
+    + '  if (t >= 8.1) {\n'
     + '    for (var i = 0; i < dots.length; i++) {\n'
     + '      var d = dots[i];\n'
     + '      if (d.returned || t < d.wanderDelay) continue;\n'
@@ -699,10 +699,10 @@
     + 'var cta     = document.getElementById("cta");\n'
     + '\n'
     + 'setTimeout(function() { logo.classList.add("show"); },          1200);\n'
-    + 'setTimeout(function() { logo.classList.remove("show"); },       4000);\n'
-    + 'setTimeout(function() { welcome.classList.add("show"); },       4300);\n'
-    + 'setTimeout(function() { welcome.classList.remove("show"); },    8400);\n'
-    + 'setTimeout(function() { cta.classList.add("show"); },           8900);\n';
+    + 'setTimeout(function() { logo.classList.remove("show"); },       8100);\n'
+    + 'setTimeout(function() { welcome.classList.add("show"); },       8400);\n'
+    + 'setTimeout(function() { welcome.classList.remove("show"); },   12500);\n'
+    + 'setTimeout(function() { cta.classList.add("show"); },          13000);\n';
 
   // ── XK Loader snippet ─────────────────────────────────────────────────────
   // Logo: inline SVG wordmark (XK1W.svg not available locally, approximated with Space Grotesk)
